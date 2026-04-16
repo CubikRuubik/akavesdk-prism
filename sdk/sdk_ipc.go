@@ -60,6 +60,18 @@ type IPC struct {
 	withRetry retry.WithRetry
 }
 
+// LatestBlockNumber returns the latest chain block number.
+func (sdk *IPC) LatestBlockNumber(ctx context.Context) (_ uint64, err error) {
+	defer mon.Task()(&ctx)(&err)
+
+	blockNumber, err := sdk.ipc.LatestBlockNumber(ctx)
+	if err != nil {
+		return 0, errSDK.Wrap(err)
+	}
+
+	return blockNumber, nil
+}
+
 // CreateBucket creates a new bucket.
 func (sdk *IPC) CreateBucket(ctx context.Context, name string) (_ *IPCBucketCreateResult, err error) {
 	defer mon.Task()(&ctx, name)(&err)

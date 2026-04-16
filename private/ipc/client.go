@@ -230,6 +230,11 @@ func (client *Client) ChainID() *big.Int {
 	return client.chainID
 }
 
+// LatestBlockNumber returns the latest chain block number.
+func (client *Client) LatestBlockNumber(ctx context.Context) (uint64, error) {
+	return client.Eth.BlockNumber(ctx)
+}
+
 // TestDeployListPolicy deploys new list policy for provided user address.
 func (client *Client) TestDeployListPolicy(ctx context.Context, user common.Address) (*contracts.ListPolicy, error) {
 	_, tx, listPolicy, err := contracts.DeployListPolicy(client.Auth, client.Eth)
