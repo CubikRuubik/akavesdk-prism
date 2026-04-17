@@ -37,10 +37,12 @@ func TestLatestBlockNumber(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	blockNumber, err := client.LatestBlockNumber(ctx)
+	info, err := client.LatestBlockNumber(ctx)
 	require.NoError(t, err)
-	require.Greater(t, blockNumber, uint64(0))
-	t.Logf("latest block number: %d", blockNumber)
+	require.Greater(t, info.Number, uint64(0))
+	require.False(t, info.Time.IsZero())
+	require.NotEqual(t, info.Hash, common.Hash{})
+	t.Logf("latest block: number=%d, time=%s, hash=%s", info.Number, info.Time, info.Hash.Hex())
 }
 
 func TestContracts(t *testing.T) {

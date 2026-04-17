@@ -49,9 +49,11 @@ func TestIPCLatestBlockNumber(t *testing.T) {
 	ipc, err := akave.IPC()
 	require.NoError(t, err)
 
-	blockNumber, err := ipc.LatestBlockNumber(t.Context())
+	info, err := ipc.LatestBlockNumber(t.Context())
 	require.NoError(t, err)
-	require.Greater(t, blockNumber, uint64(0))
+	require.Greater(t, info.Number, uint64(0))
+	require.False(t, info.Time.IsZero())
+	require.NotEmpty(t, info.Hash)
 }
 
 func TestIPCCreateBucket(t *testing.T) {
