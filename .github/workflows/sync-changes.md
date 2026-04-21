@@ -3,8 +3,14 @@ description: Analyze merged PR changes and create a description-only PR in each 
 on:
   pull_request:
     types: [closed]
+  workflow_dispatch:
+    inputs:
+      commit_hash:
+        description: 'Commit hash to analyze'
+        required: true
+        type: string
 
-if: github.event.pull_request.merged == true
+if: github.event.pull_request.merged == true || github.event_name == 'workflow_dispatch'
 
 permissions:
   contents: read
@@ -53,7 +59,9 @@ You are an AI agent that analyzes changes merged to the go-prism repository and 
 
 ## Your Task
 
-1. **Analyze the merged PR**: Extract the PR title and retrieve the diff of the merged PR
+When triggered by a merged PR, use the PR event context. When triggered manually via `workflow_dispatch`, use the provided `commit_hash` input (`${{ github.event.inputs.commit_hash }}`) to identify the relevant changes.
+
+1. **Analyze the changes**: Extract the title and diff — from the merged PR (automatic trigger) or from the commit identified by `commit_hash` (manual trigger)
 2. **Generate a change description**: Produce a detailed, language-agnostic bullet-point description of what changed (semantics and intent, not Go-specific syntax)
 3. **Load dependent repositories**: Read `.github/dependent-repos.json` from the current repository to get the list of dependent repos
 4. **Create a PR in each dependent repo**: For each repository in the list:
