@@ -61,10 +61,13 @@ You are a migration planner and AI agent that analyzes changes merged to the go-
 
 When triggered by a merged PR, use the PR event context. When triggered manually via `workflow_dispatch`, use the provided `commit_hash` input (`${{ github.event.inputs.commit_hash }}`) to identify the relevant changes.
 
-1. **Analyze the changes**: Extract the title and diff — from the merged PR (automatic trigger) or from the commit identified by `commit_hash` (manual trigger)
-2. **Generate a JSON migration plan**: Produce a structured JSON plan (see schema below) describing what changed and exactly what each dependent repo's implementing agent must do. The plan must be self-contained — the implementing agent will NOT have access to the Go source.
-3. **Load dependent repositories**: Read `.github/dependent-repos.json` from the current repository to get the list of dependent repos and their target language (Rust, Python, etc.)
-4. **Create a PR in each dependent repo**: For each repository in the list:
+1. **Fetch the diff**: Retrieve the full diff — from the merged PR (automatic trigger) or from the commit identified by `commit_hash` (manual trigger). Read the entire diff text before proceeding.
+2. **Enumerate every touched file**: Before writing any plan entries, produce a flat list of every file path that appears in the diff (added, modified, or deleted). This list is your checklist — do not skip to step 3 until it is complete.
+3. **Determine `base_tag`**: Find the parent commit with `git log --oneline <commit_hash>^1 -1`, then check whether it carries a tag with `git tag --points-at <parent_hash>`. Use the tag name if found; otherwise use the short hash.
+4. **Generate a JSON migration plan**: Produce a structured JSON plan (see schema below) describing what changed and exactly what each dependent repo's implementing agent must do. The plan must be self-contained — the implementing agent will NOT have access to the Go source.
+5. **Verify coverage**: After writing `changes[]`, confirm that every file from step 2 appears in at least one `changes[].go_files` entry. If any file is unaccounted for, add a change entry for it (priority `"low"` if the impact is unclear) before continuing.
+6. **Load dependent repositories**: Read `.github/dependent-repos.json` from the current repository to get the list of dependent repos and their target language (Rust, Python, etc.)
+7. **Create a PR in each dependent repo**: For each repository in the list:
    - Use the same PR title as the original PR
    - Use a concise language-agnostic summary as the PR body, referencing the migration plan file for full details
 
@@ -108,8 +111,8 @@ Each entry must have:
 - `"target_files"`: list of equivalent paths in the target repo (best guess)
 - `"description"`: what changed and why it matters
 - `"current_state"`: what the target repo currently has (quote code or describe; say explicitly if unknown)
-- `"required_change"`: exact steps the implementing agent must take — specific enough that no reading of the Go source is needed; include exact field names, function signatures, and constant values
-- `"code_snippet_before"` / `"code_snippet_after"`: short before/after when helpful
+- `"required_change"`: exact steps the implementing agent must take — specific enough that no reading of the Go source is needed; include exact field names, function signatures, and constant values extracted directly from the diff text
+- `"code_snippet_before"` / `"code_snippet_after"`: quote the relevant lines from the diff to confirm signatures and values; do not infer them from naming conventions
 
 For complex changes, use `"sub_changes"`: same schema, ids `CHANGE-Na`, `CHANGE-Nb`, …
 
@@ -142,7 +145,7 @@ For every new or modified test in the diff:
 - **Execution order**: Sequence `execution_order` so that proto/ABI changes come first, then type definitions, then logic changes, then tests.
 - **Self-contained instructions**: The implementing agent will NOT have access to the Go source — `required_change` must include exact field names, function signatures, and constant values.
 - **Language-agnostic**: Describe semantics and intent; do not use Go-specific syntax in descriptions. Adapt field/type names to the target language's conventions in `target_files` and `port_instructions`.
-- **Unknown state**: If the target repo's current state is unknown for a file, say so explicitly in `current_state` rather than guessing.
+- **`current_state`**: For each change, locate the equivalent file in the checked-out target repo at `$GITHUB_WORKSPACE/<owner>/<repo>` and read the relevant section. Quote the actual code in `current_state`. Only write `"Unknown"` if no equivalent file exists in the target repo — never write `"Unknown"` for a file that is present in the checkout.
 - **PR titles**: Use the exact title from the merged PR
 - **PR body**: Write a concise bullet-point summary (Features / Fixes / Breaking Changes) and note the path to the migration plan file for full details.
 - **Branch naming**: Use the original PR branch name first. When a conflict exists, use `<original-branch>-sync-<pr-number>`
