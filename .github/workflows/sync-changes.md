@@ -139,6 +139,19 @@ For every new or modified test in the diff:
 - `"port_instructions"`: step-by-step instructions to write the equivalent test in the target language, including helper functions needed and test data setup
 - `"dependencies"`: list of `CHANGE-N` ids that must be complete before this test can pass
 
+## Scope Boundaries — What NOT to include
+
+Every entry in `changes[]`, `contract_updates[]`, and `test_updates[]` must trace directly to a line in the diff. If it is not in the diff, it is out of scope.
+
+**Do not include:**
+
+- **Pre-existing bugs or incompatibilities** found while reading the target repo — e.g. a dependency version conflict, a vendored patch, or a `build.rs` fix that was already broken before this commit. These are not caused by the Go change and must not appear in the migration plan.
+- **Opportunistic improvements** — refactors, code style fixes, or dependency upgrades noticed during analysis that are unrelated to the diff.
+- **Speculative changes** — anything that "might be needed" or "should probably also be updated" without a corresponding line in the diff.
+- **Additional Fixes sections** or any free-form appendix outside the JSON schema. The migration plan file contains only the JSON object and nothing else.
+
+If you notice a pre-existing problem in the target repo while reading `current_state`, you may add a note inside that field (e.g. `"current_state": "... Note: unrelated pre-existing issue observed: ..."`) but do not add a change entry for it and do not include it in `execution_order`.
+
 ## Guidelines
 
 - **Migration plan file**: Each dependent repo is checked out at `$GITHUB_WORKSPACE/<owner>/<repo>`. For each target repo, list existing `.json` files in `$GITHUB_WORKSPACE/<owner>/<repo>/change_plans/`, then write the full JSON migration plan to `$GITHUB_WORKSPACE/<owner>/<repo>/change_plans/change_plan_<N+1>.json` where N is the count of files found (starting at 1 if the directory is empty or missing). **Do not write this file anywhere in the main `go-prism` workspace.** This file is the only change committed to that repo branch.
