@@ -82,6 +82,7 @@ The go-prism source is checked out at `$GITHUB_WORKSPACE`. The `source_commit` w
 3. **Verify coverage**: After all files are processed, go through every file in the step-1 inventory and categorize each one:
    - If it is under `private/ipc/` or `sdk/` and has no `changes[]` or `contract_updates[]` entry — add one (priority `"low"`) before continuing.
    - For everything else (`go.mod`, `go.sum`, `Makefile`, `README.md`, proto-generated files, test fixtures, etc.) — do **not** add a change entry. Instead, record the path in a top-level `"skipped_files"` array with a one-word reason (e.g. `"documentation"`, `"dependencies"`, `"generated"`, `"build"`). This makes the omission explicit rather than silent.
+   - **Do not add a file to `skipped_files` if it already has a `test_updates[]` entry.** A file covered by `test_updates[]` is not skipped — it is acted on.
 
 4. **Check the plan**: Re-read the diff from step 1 and review the draft plan as a skeptical second author. For each issue found, correct the plan in place before proceeding. Check:
    - **Changed files**: ensure change plan contains all data required to make mirror changes to the dependent repos.
