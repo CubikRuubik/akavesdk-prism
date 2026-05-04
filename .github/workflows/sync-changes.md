@@ -73,7 +73,7 @@ When triggered by a merged PR, use the PR event context. When triggered manually
 
 - Use the repository identifier to derive the local checkout path as `$GITHUB_WORKSPACE/<owner>/<repo>` (for example, `CubikRuubik/akavesdk-rust-prism` maps to `$GITHUB_WORKSPACE/CubikRuubik/akavesdk-rust-prism`)
 - List existing `.json` files in `change_plans/` inside that repository checkout directory; create `change_plans/change_plan_<N+1>.json` inside the same directory where N is the count found (use 1 if the directory is empty or missing)
-- Use the same branch name as the original PR branch as the first choice; fallback to `<original-branch>-sync-<pr-number>` if already taken
+- Always construct the branch name as `sync/<short-commit-hash>-<unix-timestamp>` where `<short-commit-hash>` is the first 7 characters of the target commit hash and `<unix-timestamp>` is the current UTC time in seconds (e.g. `sync/8b66e30-1746355200`). Never reuse the original PR branch name.
 - Target the `main` branch
 - Use the `create-pull-request` **safe output** with `repo` set to the dependent repo and `path` set to that repo's checkout path
 
@@ -161,8 +161,8 @@ If you notice a pre-existing problem in the target repo while reading `current_s
 - **`current_state`**: For each change, locate the equivalent file in the checked-out target repo at `$GITHUB_WORKSPACE/<owner>/<repo>` and read the relevant section. Quote the actual code in `current_state`. Only write `"Unknown"` if no equivalent file exists in the target repo — never write `"Unknown"` for a file that is present in the checkout.
 - **PR titles**: Use the exact title from the merged PR
 - **PR body**: Write a concise bullet-point summary (Features / Fixes / Breaking Changes) and note the path to the migration plan file for full details.
-- **Branch naming**: Use the original PR branch name first. When a conflict exists, use `<original-branch>-sync-<pr-number>`
-- **Branch creation**: Always pass the chosen branch name in `create-pull-request`; if it does not exist yet in the target repository, the PR flow should create it from local changes.
+- **Branch naming**: Always use `sync/<short-commit-hash>-<unix-timestamp>` (e.g. `sync/8b66e30-1746355200`). The timestamp is seconds since Unix epoch at the time the workflow runs. This guarantees uniqueness across reruns of the same commit.
+- **Branch creation**: Always pass the constructed branch name in `create-pull-request`; if it does not exist yet in the target repository, the PR flow should create it from local changes.
 - **Target repos**: Read the full `owner/repo` list from `.github/dependent-repos.json` — never hardcode repository names
 - **Cross-repo settings**: Always include `repo: "owner/repo"` in the `create-pull-request` safe output to specify the destination repository
 
