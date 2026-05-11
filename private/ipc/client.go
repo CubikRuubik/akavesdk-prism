@@ -28,6 +28,13 @@ type Config struct {
 	AccessContractAddress  string `usage:"hex access manager contract address"`
 }
 
+// BlockInfo contains information about a chain block.
+type BlockInfo struct {
+	Number uint64
+	Time   time.Time
+	Hash   common.Hash
+}
+
 // StorageData represents the struct for signing.
 type StorageData struct {
 	ChunkCID   []byte
@@ -302,6 +309,25 @@ func UpgradeStorage(ctx context.Context, dialURI, privateKey, proxyAddr, callDat
 // ChainID returns chain id.
 func (client *Client) ChainID() *big.Int {
 	return client.chainID
+}
+
+// LatestBlockNumber returns info about the latest chain block including number, timestamp, and hash.
+func (client *Client) LatestBlockNumber(ctx context.Context) (BlockInfo, error) {
+	blockNum, err := client.Eth.BlockNumber(ctx)
+	if err != nil {
+		return BlockInfo{}, err
+	}
+
+	header, err := client.Eth.HeaderByNumber(ctx, new(big.Int).SetUint64(blockNum))
+	if err != nil {
+		return BlockInfo{}, err
+	}
+
+	return BlockInfo{
+		Number: header.Number.Uint64(),
+		Time:   time.Unix(int64(header.Time), 0),
+		Hash:   header.Hash(),
+	}, nil
 }
 
 // TestDeployListPolicy deploys new list policy for provided user address.

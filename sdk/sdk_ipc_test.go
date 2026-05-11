@@ -34,6 +34,28 @@ import (
 	"github.com/akave-ai/akavesdk/sdk"
 )
 
+func TestIPCLatestBlockNumber(t *testing.T) {
+	privateKey := PickPrivateKey(t)
+	dialURI := PickDialURI(t)
+	pk := ipctest.NewFundedAccount(t, privateKey, dialURI, ipctest.ToWei(10))
+	newPk := hexutil.Encode(crypto.FromECDSA(pk))[2:]
+
+	akave, err := sdk.New(PickNodeRPCAddress(t), maxConcurrency, blockPartSize.ToInt64(), true, sdk.WithPrivateKey(newPk))
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		require.NoError(t, akave.Close())
+	})
+
+	ipc, err := akave.IPC()
+	require.NoError(t, err)
+
+	info, err := ipc.LatestBlockNumber(t.Context())
+	require.NoError(t, err)
+	require.Greater(t, info.Number, uint64(0))
+	require.False(t, info.Time.IsZero())
+	require.NotEmpty(t, info.Hash)
+}
+
 func TestIPCCreateBucket(t *testing.T) {
 	privateKey := PickPrivateKey(t)
 	dialURI := PickDialURI(t)

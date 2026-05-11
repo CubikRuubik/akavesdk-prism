@@ -23,6 +23,28 @@ import (
 	"github.com/akave-ai/akavesdk/private/testrand"
 )
 
+func TestLatestBlockNumber(t *testing.T) {
+	ctx := t.Context()
+	dialURI := ipctest.PickDialURI(t)
+	privateKey := ipctest.PickPrivateKey(t)
+
+	pk := ipctest.NewFundedAccount(t, privateKey, dialURI, ipctest.ToWei(10))
+	newPk := ipctest.PrivateKeyToHex(pk)
+
+	client, err := ipc.DeployContracts(ctx, ipc.Config{
+		DialURI:    dialURI,
+		PrivateKey: newPk,
+	})
+	require.NoError(t, err)
+
+	info, err := client.LatestBlockNumber(ctx)
+	require.NoError(t, err)
+	require.Greater(t, info.Number, uint64(0))
+	require.False(t, info.Time.IsZero())
+	require.NotEqual(t, info.Hash, common.Hash{})
+	t.Logf("latest block: number=%d, time=%s, hash=%s", info.Number, info.Time, info.Hash.Hex())
+}
+
 func TestContracts(t *testing.T) {
 	var (
 		ctx            = t.Context()

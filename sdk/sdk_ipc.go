@@ -36,6 +36,13 @@ import (
 	"github.com/akave-ai/akavesdk/private/retry"
 )
 
+// BlockInfo contains information about a chain block.
+type BlockInfo struct {
+	Number uint64
+	Time   time.Time
+	Hash   string
+}
+
 // IPC exposes SDK ipc API.
 type IPC struct {
 	client     pb.IPCNodeAPIClient
@@ -67,6 +74,20 @@ func (sdk *IPC) MultiUpload(fileConcurrency int) *MultiUpload {
 		ipcSDK:          sdk,
 		fileConcurrency: fileConcurrency,
 	}
+// LatestBlockNumber returns info about the latest chain block including number, timestamp, and hash.
+func (sdk *IPC) LatestBlockNumber(ctx context.Context) (_ BlockInfo, err error) {
+	defer mon.Task()(&ctx)(&err)
+
+	info, err := sdk.ipc.LatestBlockNumber(ctx)
+	if err != nil {
+		return BlockInfo{}, errSDK.Wrap(err)
+	}
+
+	return BlockInfo{
+		Number: info.Number,
+		Time:   info.Time,
+		Hash:   info.Hash.Hex(),
+	}, nil
 }
 
 // CreateBucket creates a new bucket.
